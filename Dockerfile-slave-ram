@@ -1,0 +1,10 @@
+ARG RABBITMQ_VERSION
+
+FROM rabbitmq:$RABBITMQ_VERSION-management
+COPY .erlang.cookie /var/lib/rabbitmq/.erlang.cookie
+COPY slave_ram.sh /usr/local/bin/
+ENTRYPOINT [ "/usr/local/bin/docker-entrypoint.sh" ]
+CMD chmod 400 /var/lib/rabbitmq/.erlang.cookie && \
+    /usr/local/bin/slave_ram.sh && \
+    tail -f /dev/null
+RUN chmod +x /usr/local/bin/slave_ram.sh

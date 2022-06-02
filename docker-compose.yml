@@ -1,0 +1,113 @@
+version: "3"
+networks:
+  mqNetwork:
+    driver: bridge
+services:
+  rabbitmq-cluster-01:
+    build:
+      context: ./
+      dockerfile: Dockerfile-master
+      args: 
+        RABBITMQ_VERSION: 3.9
+    image: qoo/rabbitmq:3.9.10-management-rabbitmq1
+    hostname: rabbitmq-cluster-01
+    container_name: rabbitmq-cluster-01
+    ports:
+      - 15672:15672
+ #    - 55672:5672
+    environment:
+      - RABBITMQ_NODENAME=rabbitmq
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+      - RABBITMQ_NODENAME=rabbitmq@rabbitmq-cluster-01
+    networks:
+      - mqNetwork
+#    volumes:
+#      - /root/mq_qoo/enabled_plugins:/etc/rabbitmq/enabled_plugins
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5g"
+
+
+  rabbitmq-cluster-02:
+    build:
+      context: ./
+      dockerfile: Dockerfile-slave-ram
+      args: 
+        RABBITMQ_VERSION: 3.9
+    image: qoo/rabbitmq:3.9.10-management-rabbitmq2
+    hostname: rabbitmq-cluster-02
+    container_name: rabbitmq-cluster-02
+    ports:
+      - 15673:15672
+#      - 5673:5672
+    environment:
+      - RABBITMQ_NODENAME=rabbitmq
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+      - MASTER_NODE_HOST_NAME=rabbitmq@rabbitmq-cluster-01
+    depends_on:
+      - rabbitmq-cluster-01
+    networks:
+      - mqNetwork
+#    volumes:
+#      - /root/mq_qoo/enabled_plugins:/etc/rabbitmq/enabled_plugins
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5g"
+
+
+  rabbitmq-cluster-03:
+    build:
+      context: ./
+      dockerfile: Dockerfile-slave
+      args: 
+        RABBITMQ_VERSION: 3.9
+    image: qoo/rabbitmq:3.9.10-management-rabbitmq3
+    hostname: rabbitmq-cluster-03
+    container_name: rabbitmq-cluster-03
+    ports:
+      - 15674:15672
+#      - 5674:5672
+    environment:
+      - RABBITMQ_NODENAME=rabbitmq
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+      - MASTER_NODE_HOST_NAME=rabbitmq@rabbitmq-cluster-01
+    depends_on:
+      - rabbitmq-cluster-01
+    networks:
+      - mqNetwork
+#    volumes:
+#      - /root/mq_qoo/enabled_plugins:/etc/rabbitmq/enabled_plugins
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5g"
+
+
+  haproxy:
+#    build: 
+#        context: ./
+#        dockerfile: Dockerfile-haproxy
+#        args: 
+#          HAPROXY_VERSION: ${HAPROXY_VERSION}
+    image: haproxy
+    container_name: haproxy
+    ports:
+      - 5672:5672
+      - 8100:8100
+    depends_on:
+      - rabbitmq-cluster-01
+      - rabbitmq-cluster-02
+      - rabbitmq-cluster-03
+    networks:
+      - mqNetwork
+    volumes:
+     - /root/mq_qoo/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5g"
