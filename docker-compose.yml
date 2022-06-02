@@ -106,7 +106,7 @@ services:
     networks:
       - mqNetwork
     volumes:
-     - /root/mq_qoo/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
+     - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
     logging:
       driver: "json-file"
       options:
